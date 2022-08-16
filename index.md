@@ -11,6 +11,6 @@ In the following we see three different MPC formulations of obstacle avoidance. 
 <iframe width="1200" height="600" src="https://www.youtube.com/embed/z-pKW0YeRaU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## MPC obstacle avoidance without lifting and increased safety distances
-<iframe width="1200" height="600" src="https://www.youtube.com/embed/9h2oaFButNA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe style="display: block; margin: auto;" width="1200" height="600" src="https://www.youtube.com/embed/9h2oaFButNA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 
