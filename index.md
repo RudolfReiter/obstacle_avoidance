@@ -1,37 +1,16 @@
-## Welcome to GitHub Pages
+## Welcome to the project of Frenet/Cartesian lifting for obstacle avoidance within nonlinear MPC
 
-You can use the [editor on GitHub](https://github.com/RudolfReiter/obstacle_avoidance/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+This work is related to an ACC 2023 submission by Rudolf Reiter.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-<iframe width="560" height="315" src="https://www.youtube.com/embed/I2FuciVrCw0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-### Markdown
+In the following we see three different MPC formulations of obstacle avoidance. In the first video we show the porposed lifting algorithm, where the obstacle avoidance is formulated in the Cartesian coordinate system, whereas the road constraints and progress are formulated in the Frenet coordinate frame. In the second video we see a naive formulation of the obstacle constraints in the Frenet frame where obstacle deformations are ignored. Due to the wrong constraints this formulation leads to a crash. In the thrid video the obstalce avoidance in the Frenet frame is over-approximated, which leads to collision avoidance but unnecessary defensive behavior.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## MPC obstacle avoidance with lifting
+<iframe width="800" height="400" src="https://www.youtube.com/embed/I2FuciVrCw0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-```markdown
-Syntax highlighted code block
+## MPC obstacle avoidance without lifting
+<iframe width="560" height="315" src="https://www.youtube.com/embed/z-pKW0YeRaU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-# Header 1
-## Header 2
-### Header 3
+## MPC obstacle avoidance without lifting and increased safety distances
+<iframe width="560" height="315" src="https://www.youtube.com/embed/9h2oaFButNA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-- Bulleted
-- List
 
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/RudolfReiter/obstacle_avoidance/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
