@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 from tabulate import tabulate
 import numpy as np
-
+import pickle
 from vehiclegym.automotive_datastructures import CartesianTrajectory
 from vehiclegym.trajectory_planner_base import VehicleObstacleModel
 from vehiclegym.road import RoadOptions, Road
@@ -14,32 +14,7 @@ import time
 from vehiclegym.animator import AnimationParameters, Animator, AnimationPlanningColorType
 from vehiclegym.simulator_simple import SimulatorOptions, SimpleSimulator
 
-
-@dataclass
-class ValidationResult:
-    obstacle_avoidance_label: str
-    class_label: str
-    lifting_used: bool
-    comp_times: List
-    comp_time_mean: float
-    comp_time_min: float
-    comp_time_max: float
-    min_distance: float
-    collisions: float
-    qp_iter: float
-    sim_time: float
-    qp_time: float
-    s_final: float
-
-
-@dataclass
-class PlannerOption:
-    str_obstacle: str
-    obstacle: VehicleObstacleModel
-    lifting: bool
-    weight_obstacle: float
-    circles: int
-
+from utils import PlannerOption, ValidationResult
 
 if __name__ == "__main__":
     print("-----------------------")
@@ -49,8 +24,8 @@ if __name__ == "__main__":
     # general scenario parameters
     USE_RANDOM = False
     ANIMATE = False
-    n_sim = int(50)
-    n_runs = 5
+    n_sim = int(45)
+    n_runs = 20
     idx_skip_traj = 2
     validations = []
     planner_options = [
@@ -69,20 +44,10 @@ if __name__ == "__main__":
         PlannerOption(str_obstacle="circle3x3", obstacle=VehicleObstacleModel.CIRCLES, lifting=False,
                       weight_obstacle=1e6, circles=3),
 
-        PlannerOption(str_obstacle="circle1x1", obstacle=VehicleObstacleModel.CIRCLES, lifting=True,
-                      weight_obstacle=1e6, circles=1),
-        PlannerOption(str_obstacle="circle1x1", obstacle=VehicleObstacleModel.CIRCLES, lifting=False,
-                      weight_obstacle=1e6, circles=1),
-
-        PlannerOption(str_obstacle="hyperplane1e6", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=True,
-                      weight_obstacle=1e6, circles=1),
-        PlannerOption(str_obstacle="hyperplane1e6", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=False,
-                      weight_obstacle=1e6, circles=1),
-
-        PlannerOption(str_obstacle="hyperplane1e4", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=True,
-                      weight_obstacle=1e4, circles=1),
-        PlannerOption(str_obstacle="hyperplane1e4", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=False,
-                      weight_obstacle=1e4, circles=1)
+        PlannerOption(str_obstacle="hyperplane1e5", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=True,
+                      weight_obstacle=1e5, circles=1),
+        PlannerOption(str_obstacle="hyperplane1e5", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=False,
+                      weight_obstacle=1e5, circles=1)
     ]
     for options in planner_options:
 
@@ -94,16 +59,19 @@ if __name__ == "__main__":
         ego_model_params.maximum_lateral_acc = 18
         ego_model_params.length_rear = 2
         ego_model_params.length_front = 2
-        ego_model_params.safety_radius = 2.5
+        if not options.lifting and options.obstacle == VehicleObstacleModel.ELIPSE:
+            ego_model_params.safety_radius = 3.5
+        else:
+            ego_model_params.safety_radius = 2.5
         ego_model_params.chassis_length = 4
 
         opp_model_params_0 = KinematicModelParameters()
         opp_model_params_0.maximum_deceleration_force = 10e3
         opp_model_params_0.maximum_acceleration_force = 15e3
-        opp_model_params_0.safety_radius = 1
+        opp_model_params_0.safety_radius = 3
         opp_model_params_0.maximum_velocity = 30
         opp_model_params_0.maximum_lateral_acc = 12
-        opp_model_params_0.chassis_length = 6
+        opp_model_params_0.chassis_length = 26
         opp_model_params_0.chassis_width = 2.8
         opp_model_params_0.length_rear = 3
         opp_model_params_0.length_front = 3
@@ -121,10 +89,15 @@ if __name__ == "__main__":
         planner_options.increase_opp = 0.
         planner_options.n_circles_opp = options.circles
         planner_options.n_circles_ego = options.circles
-        planner_options.auto_size_circles = True
+        if options.lifting:
+            planner_options.auto_size_circles = True
+            planner_options.increase_opp = 0.5
+        else:
+            planner_options.auto_size_circles = False
+            planner_options.increase_opp = 2.0
         planner_options.use_lifting = options.lifting
         planner_options.panos_logmaxepx = np.sqrt(0.01)
-        planner_options.increase_opp = 0.0
+
         planner_options.contraints_slack_weight_sqr = options.weight_obstacle  # use 1e4 for hyperplane
 
         opp_planner_options = deepcopy(planner_options)
@@ -176,7 +149,7 @@ if __name__ == "__main__":
                                                                             opp_model_params_1])
 
         speed_opp = 15
-        dist = 35.
+        dist = 45.
         ini_dist = 50
         n_pos = 3
         # Set parameters
@@ -248,8 +221,7 @@ if __name__ == "__main__":
             simulator.reset([initial_state_ego_f, initial_state_opp_0_f, initial_state_opp_1_f,
                              initial_state_opp_2_f], road=road)
 
-        collisions_lead = np.mean(np.array(collisions_lead))
-        collisions_follow = np.mean(np.array(collisions_follow))
+        collisions = np.sum(np.array(collisions_lead + collisions_follow) > 0)
         label_class = "20222"
         validations.append(ValidationResult(obstacle_avoidance_label=options.str_obstacle,
                                             class_label=label_class,
@@ -259,11 +231,12 @@ if __name__ == "__main__":
                                             comp_time_max=np.mean(np.array(t_max)),
                                             comp_time_mean=np.mean(np.array(t_average)),
                                             min_distance=np.mean(np.array(min_distances)),
-                                            collisions=collisions_lead + collisions_follow,
+                                            collisions=collisions,
                                             qp_iter=np.mean(np.array(qp_iter)),
                                             sim_time=np.mean(np.array(t_sim)),
                                             qp_time=np.mean(np.array(t_qp)),
-                                            s_final=np.mean(np.array(s_final))))
+                                            s_final=np.mean(np.array(s_final)),
+                                            s_final_all=s_final))
 
     table_output = []
     table_header = ["Class", "Obstacle", "Lifting", "t_ave", "t_min", "t_max", "collisions_mean", "s_final", "min_dist",
@@ -284,3 +257,6 @@ if __name__ == "__main__":
         table_output.append(table_row)
     t = tabulate(table_output, headers=table_header, tablefmt='orgtbl')
     print(t)
+
+    with open("save_data_long_add_safe", "wb") as fp:  # Pickling
+        pickle.dump(validations, fp)
