@@ -23,11 +23,11 @@ if __name__ == "__main__":
 
     # general scenario parameters
     SAVE = True
-    f_name = "save_data_long_add_safe_2"
+    f_name = "save_data_long_add_safe_3"
     USE_RANDOM = False
     ANIMATE = False
     n_sim = int(80)
-    n_runs = 10
+    n_runs = 50
     idx_skip_traj = 2
     validations = []
     planner_options = [
