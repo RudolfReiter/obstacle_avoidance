@@ -1,3 +1,4 @@
+import pickle
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import List
@@ -23,10 +24,11 @@ if __name__ == "__main__":
 
     # general scenario parameters
     SAVE = True
-    f_name = "save_data_short_3_all"
-    ANIMATE = False
+    f_name = "save_data_long_no_safe_3"
+    USE_RANDOM = False
+    ANIMATE = True
     n_sim = int(80)
-    n_runs = 30
+    n_runs = 1
     idx_skip_traj = 2
     validations = []
     planner_options = [
@@ -34,14 +36,17 @@ if __name__ == "__main__":
                       circles=3),
         PlannerOption(str_obstacle="ellipse", obstacle=VehicleObstacleModel.ELIPSE, lifting=False, weight_obstacle=1e6,
                       circles=3),
-        PlannerOption(str_obstacle="circle1x1", obstacle=VehicleObstacleModel.CIRCLES, lifting=True,
-                      weight_obstacle=1e6, circles=1),
-        PlannerOption(str_obstacle="circle1x1", obstacle=VehicleObstacleModel.CIRCLES, lifting=False,
-                      weight_obstacle=1e6, circles=1),
+
+        PlannerOption(str_obstacle="circle5x5", obstacle=VehicleObstacleModel.CIRCLES, lifting=True,
+                      weight_obstacle=1e6, circles=5),
+        PlannerOption(str_obstacle="circle5x5", obstacle=VehicleObstacleModel.CIRCLES, lifting=False,
+                      weight_obstacle=1e6, circles=5),
+
         PlannerOption(str_obstacle="circle3x3", obstacle=VehicleObstacleModel.CIRCLES, lifting=True,
                       weight_obstacle=1e6, circles=3),
         PlannerOption(str_obstacle="circle3x3", obstacle=VehicleObstacleModel.CIRCLES, lifting=False,
                       weight_obstacle=1e6, circles=3),
+
         PlannerOption(str_obstacle="hyperplane1e5", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=True,
                       weight_obstacle=1e5, circles=1),
         PlannerOption(str_obstacle="hyperplane1e5", obstacle=VehicleObstacleModel.HYPERPLANE, lifting=False,
@@ -51,27 +56,25 @@ if __name__ == "__main__":
 
         # Generate parameter data classes
         ego_model_params = KinematicModelParameters()
-        ego_model_params.maximum_deceleration_force = 15e3
-        ego_model_params.maximum_acceleration_force = 10e3
+        ego_model_params.maximum_deceleration_force = 10e3
+        ego_model_params.maximum_acceleration_force = 15e3
         ego_model_params.maximum_velocity = 40
-        ego_model_params.maximum_lateral_acc = 7
+        ego_model_params.maximum_lateral_acc = 18
         ego_model_params.length_rear = 1.7
         ego_model_params.length_front = 1.7
-        if not options.lifting and options.obstacle == VehicleObstacleModel.ELIPSE:
-            ego_model_params.safety_radius = 2.7
-        else:
-            ego_model_params.safety_radius = 2.5
+        ego_model_params.safety_radius = 2.5
         ego_model_params.chassis_length = 4
 
         opp_model_params_0 = KinematicModelParameters()
-        opp_model_params_0.maximum_deceleration_force = 15e3
-        opp_model_params_0.maximum_acceleration_force = 10e3
-        opp_model_params_0.safety_radius = 2.5
+        opp_model_params_0.maximum_deceleration_force = 10e3
+        opp_model_params_0.maximum_acceleration_force = 15e3
+        opp_model_params_0.safety_radius = 3
         opp_model_params_0.maximum_velocity = 30
         opp_model_params_0.maximum_lateral_acc = 12
-        opp_model_params_0.length_rear = 1.7
-        opp_model_params_0.length_front = 1.7
-        opp_model_params_0.chassis_length = 4
+        opp_model_params_0.chassis_length = 26
+        opp_model_params_0.chassis_width = 2.8
+        opp_model_params_0.length_rear = 10
+        opp_model_params_0.length_front = 10
 
         opp_model_params_1 = deepcopy(opp_model_params_0)
 
@@ -85,14 +88,12 @@ if __name__ == "__main__":
         planner_options.increase_opp = 0.
         planner_options.n_circles_opp = options.circles
         planner_options.n_circles_ego = options.circles
-        if options.lifting:
-            planner_options.auto_size_circles = True
-            planner_options.increase_opp = .0
-        else:
-            planner_options.auto_size_circles = False
-            planner_options.increase_opp = 2.5
+        planner_options.auto_size_circles = True
+        planner_options.increase_opp = 0.0
         planner_options.use_lifting = options.lifting
         planner_options.panos_logmaxepx = np.sqrt(0.01)
+        planner_options.actions_max+=1e6
+        planner_options.actions_min-=1e6
 
         planner_options.contraints_slack_weight_sqr = options.weight_obstacle  # use 1e4 for hyperplane
 
@@ -102,7 +103,7 @@ if __name__ == "__main__":
         # Create Animation Parameter
         animation_parameter = AnimationParameters()
         animation_parameter.animation_frames_per_sec = 10
-        animation_parameter.animation_speed = 3.
+        animation_parameter.animation_speed = 1.
         animation_parameter.plot_opp_predictions = [0]
         animation_parameter.plot_safety_circles = [0, 1, 2]
         animation_parameter.plot_ego_plans = [0]
@@ -111,15 +112,13 @@ if __name__ == "__main__":
         animation_parameter.fast_animation = True
 
         # Create test road
-
         road_options = RoadOptions()
-        road_options.start_point_cartesian = CartesianTrajectory(np.array([0,0,-np.pi/2,0,0]))
-        road_options.road_width = 17
+        road_options.road_width = 25
         road_options.n_points = 400
-        road_options.random_road_parameters.maximum_kappa = 1/15#1 / 900
+        road_options.random_road_parameters.maximum_kappa = 1 / 900
         road = Road(road_options)
-        road.randomize(seed=0)
-        road.set_kappa(kappa_grid=road.kappa_grid_)# + (-1 / 50 + np.cumsum(np.ones_like(road.kappa_grid_)) / 15000))
+        road.randomize(seed=-1)
+        road.set_kappa(kappa_grid=road.kappa_grid_ + (-1 / 50 + np.cumsum(np.ones_like(road.kappa_grid_)) / 15000))
 
         # Create planner
         vehicle_planner_ego = VehiclePlannerAcados20222(ego_model_params=ego_model_params,
@@ -137,24 +136,23 @@ if __name__ == "__main__":
                                                           planner_options=opp_planner_options,
                                                           opp_model_params=[ego_model_params, opp_model_params_0])
 
-        speed_opp_0 = 10
-        speed_opp_1 = 12
-        dist = 10.
-        ini_dist = 30
-        n_pos = -0
+        speed_opp = 0
+        dist = 200.
+        ini_dist = 100
+        n_pos = 5
+        n_offset = 3
         # Set parameters
-        initial_state_ego_f = np.array([1, 0., 0., speed_opp_0 - 5, 0])
-        initial_state_opp_0_f = np.array([ini_dist, n_pos, 0.0, speed_opp_0, 0])
-        initial_state_opp_1_f = np.array([ini_dist + dist, n_pos, 0.0, speed_opp_1, 0])
+        initial_state_ego_f = np.array([1, 0., 0., 10, 0])
+        initial_state_opp_0_f = np.array([ini_dist, n_pos- n_offset, 0.3, speed_opp, 0])
+        initial_state_opp_1_f = np.array([ini_dist, -n_pos- n_offset, 0.3, speed_opp, 0])
 
         # Default actions
         action0 = np.array([0., 50., 1e2])
-        action1 = np.array([n_pos, speed_opp_0, 1e5])
-        action2 = np.array([n_pos, speed_opp_1, 1e5])
+        action1 = np.array([n_pos - n_offset, speed_opp, 1e5])
+        action2 = np.array([-n_pos- n_offset, speed_opp, 1e5])
 
         # Set parameters
         simulator_options = SimulatorOptions()
-        simulator_options.make_predictions_available = True
         simulator_options.n_sim = int(n_sim)
         simulator_options.idx_skip_traj = idx_skip_traj
         simulator = SimpleSimulator(options=simulator_options,
@@ -195,7 +193,14 @@ if __name__ == "__main__":
             qp_iter.append(np.mean(simulator.statistics.qp_iters))
             s_final.append(simulator.current_states[0][0])
 
-            road.randomize(seed=i)
+            #road.randomize(seed=i)
+            np.random.seed(seed=i)
+            delta_ss = np.random.uniform(-15, 35, 3)
+            if delta_ss[0]+60<delta_ss[1]:
+                delta_ss[1]=delta_ss[0]+60
+
+            initial_state_opp_0_f[0] = initial_state_opp_0_f[0] + delta_ss[0]
+            initial_state_opp_1_f[0] = initial_state_opp_1_f[0] + delta_ss[1]
             simulator.reset([initial_state_ego_f, initial_state_opp_0_f, initial_state_opp_1_f], road=road)
 
         collisions = float(np.sum(np.array(collisions_lead + collisions_follow) > 0))
